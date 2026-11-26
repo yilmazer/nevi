@@ -1,6 +1,7 @@
-name: Rust CI
+name: Build Nevi
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -12,38 +13,17 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    name: Test on ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+  build-macos-arm64:
+    name: Build & Test on macOS ARM64
+    runs-on: macos-latest
     timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macOS
-            os: macos-latest
-          - name: Linux
-            os: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Linux native dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            cmake \
-            libssl-dev \
-            libx11-dev \
-            libxcb1-dev \
-            libxcb-render0-dev \
-            libxcb-shape0-dev \
-            libxcb-xfixes0-dev \
-            pkg-config \
-            zlib1g-dev
+      - name: Verify ARM64 runner architecture
+        run: uname -m
 
       - name: Select stable Rust
         run: |
@@ -85,3 +65,10 @@ jobs:
 
       - name: Report release binary size
         run: du -sh target/release/nevi
+
+      - name: Upload macOS ARM64 binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: nevi-macos-arm64
+          path: target/release/nevi
+          if-no-files-found: error
